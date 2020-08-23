@@ -3,11 +3,18 @@ var BCLS = (function() {
     client_id = document.getElementById('client_id'),
     client_secret = document.getElementById('client_secret'),
     search_enabled = document.getElementById('search_enabled'),
+    restrict_domains = document.getElementById('restrict_domains'),
+    domain_list = document.getElementById('domain_list'),
+    restrict_geo = document.getElementById('restrict_geo'),
+    country_list = document.getElementById('country_list'),
+    disallowed = document.getElementById('disallowed'),
+    require_ssai = document.getElementById('require_ssai'),
     accountId,
     clientId,
     clientSecret,
     apiRequest = document.getElementById('apiRequest'),
     requestBody = document.getElementById('requestBody'),
+    policy_key = document.getElementById('policy_key'),
     apiResponse = document.getElementById('apiResponse'),
     generateKey = document.getElementById('generateKey'),
     allButtons = document.getElementsByTagName('button'),
@@ -26,6 +33,16 @@ var BCLS = (function() {
       return false;
     }
     return true;
+  }
+
+  /**
+   * remove spaces from a string
+   * @param {String} str string to process
+   * @return {String} trimmed string
+   */
+  function removeSpaces(str) {
+    str= str.replace(/\s/g, '');
+    return str;
   }
 
   /**
@@ -59,6 +76,7 @@ var BCLS = (function() {
       body = {},
       callback = function(response) {
         response = JSON.parse(response);
+        policy_key.value = response['key-string'];
         apiResponse.textContent = JSON.stringify(response, null, '  ');
         enableButtons();
       };
@@ -70,6 +88,22 @@ var BCLS = (function() {
     body['key-data']['account-id'] = accountId;
     if (search_enabled.checked) {
       body['key-data'].apis = ["search"];
+    }
+    if (restrict_domains.checked && domain_list.value.length > 0) {
+      body['key-data']['allowed-domains'] = removeSpaces(domain_list.value).split(',');
+    }
+    if (restrict_geo.checked && country_list.value.length > 0) {
+      body['account-id'] = accountId;
+      body.geo = removeSpaces(country_list.value).split(',');
+      if (disallowed.checked) {
+        body.geo.exclude_countries = false;
+      } else {
+        body.geo.exclude_countries = true;
+      }
+    }
+    if (require_ssai.checked) {
+      body['key-data']['account-id'] = accountId;
+      body['key-data']['require-ad-config'] = true;
     }
     options.requestBody = JSON.stringify(body);
     if (isDefined(clientId) && isDefined(clientSecret)) {
@@ -157,10 +191,11 @@ var BCLS = (function() {
       }
       setRequestData();
     });
-    apiResponse.addEventListener('click', function() {
-      apiResponse.select();
+    policy_key.addEventListener('click', function() {
+      policy_key.select();
     });
   }
 
   init();
 })();
+
